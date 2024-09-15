@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/olbrichattila/creategofra/appwizard"
 )
@@ -73,22 +74,63 @@ func extract(projectName string) {
 			return
 		}
 
-		// Create the file in the local filesystem
-		outFile, err := os.Create(targetFileName)
-		if err != nil {
-			fmt.Println("\nFailed to create file:", err)
-			return
-		}
-		defer outFile.Close()
+		// If the file is a Go file, read, replace and write its content
+		if filepath.Ext(file.Name) == ".go" {
+			content, err := io.ReadAll(zipFile)
+			if err != nil {
+				fmt.Println("\nFailed to read file:", err)
+				return
+			}
 
-		// Copy the file data from the zip to the local file
-		_, err = io.Copy(outFile, zipFile)
-		if err != nil {
-			fmt.Println("\nFailed to copy file:", err)
-			return
+			// Replace "gofraapp/" with projectName
+			modifiedContent := strings.ReplaceAll(string(content), "\"gofraapp/", "\""+projectName)
+
+			// Create the file in the local filesystem
+			outFile, err := os.Create(targetFileName)
+			if err != nil {
+				fmt.Println("\nFailed to create file:", err)
+				return
+			}
+			defer outFile.Close()
+
+			// Write the modified content back to the file
+			_, err = outFile.Write([]byte(modifiedContent))
+			if err != nil {
+				fmt.Println("\nFailed to write modified content to file:", err)
+				return
+			}
+		} else {
+			// For non-Go files, just copy the file data as is
+			outFile, err := os.Create(targetFileName)
+			if err != nil {
+				fmt.Println("\nFailed to create file:", err)
+				return
+			}
+			defer outFile.Close()
+
+			_, err = io.Copy(outFile, zipFile)
+			if err != nil {
+				fmt.Println("\nFailed to copy file:", err)
+				return
+			}
 		}
 	}
 
+	// 	// Create the file in the local filesystem
+	// 	outFile, err := os.Create(targetFileName)
+	// 	if err != nil {
+	// 		fmt.Println("\nFailed to create file:", err)
+	// 		return
+	// 	}
+	// 	defer outFile.Close()
+
+	// 	// Copy the file data from the zip to the local file
+	// 	_, err = io.Copy(outFile, zipFile)
+	// 	if err != nil {
+	// 		fmt.Println("\nFailed to copy file:", err)
+	// 		return
+	// 	}
+	// }
 }
 
 func initGoApp(projectName string) {

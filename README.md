@@ -7,7 +7,8 @@ go install github.com/olbrichattila/creategofra@latest
 ```
 
 Create new framework boilerplate: ```creategofra <projectName>```
-Example:
+
+> Example:
 ```
 creategofra myApplication
 ```

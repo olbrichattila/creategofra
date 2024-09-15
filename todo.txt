@@ -1,0 +1,1 @@
+- Create a selection if full project with login, register or blank project should be extracted
