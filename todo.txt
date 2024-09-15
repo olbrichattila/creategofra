@@ -1,1 +1,2 @@
 - Create a selection if full project with login, register or blank project should be extracted
+- Add docker container for local dev automatically according to the selected features
