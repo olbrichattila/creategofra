@@ -1,4 +1,4 @@
-package appwizard
+package specio
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ const (
 	cursorEnd   = "\033[0m"
 )
 
-func input(prompt, defaultTxt string) string {
+func Input(prompt, defaultTxt string) string {
 	result := defaultTxt
 	curPos := len(defaultTxt)
 	maxLen := curPos

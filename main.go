@@ -12,11 +12,25 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/olbrichattila/creategofra/appwizard"
+	"github.com/olbrichattila/creategofra/internal/appwizard"
 )
 
 //go:embed files/blank.zip
 var zipData []byte
+
+// Migration data
+
+//go:embed files/firebird.zip
+var firebirdZipData []byte
+
+//go:embed files/sqlite.zip
+var sqliteZipData []byte
+
+//go:embed files/mysql.zip
+var mysqlZipData []byte
+
+//go:embed files/pgsql.zip
+var pgsqlZipData []byte
 
 var processChars = []string{"\\", "|", "/", "-"}
 
@@ -27,18 +41,37 @@ func main() {
 	}
 
 	projectName := os.Args[1]
+	if validated := validate(projectName); validated != "" {
+		fmt.Println(validated)
+		return
+	}
 
-	extract(projectName)
+	extract(projectName, "", &zipData)
 	initGoApp(projectName)
-	appwizard.Wizard(projectName + "/.env")
+	responses := appwizard.Wizard(projectName + "/.env")
+
+	copyMigrations(projectName, responses)
 
 	fmt.Print("\nDone\n")
 }
 
-func extract(projectName string) {
+func validate(projectName string) string {
+	_, err := os.Stat(projectName)
+	if os.IsNotExist(err) {
+		return ""
+	}
+
+	return fmt.Sprintf("Project '%s' already exists!", projectName)
+}
+
+func extract(projectName, subFolder string, data *[]byte) {
 	projectName = projectName + "/"
+	if subFolder != "" {
+		projectName = projectName + "/" + subFolder + "/"
+	}
+
 	// Read the embedded zip file
-	zipReader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	zipReader, err := zip.NewReader(bytes.NewReader(*data), int64(len(*data)))
 	if err != nil {
 		fmt.Println("Failed to read zip file:", err)
 		return
@@ -115,26 +148,9 @@ func extract(projectName string) {
 			}
 		}
 	}
-
-	// 	// Create the file in the local filesystem
-	// 	outFile, err := os.Create(targetFileName)
-	// 	if err != nil {
-	// 		fmt.Println("\nFailed to create file:", err)
-	// 		return
-	// 	}
-	// 	defer outFile.Close()
-
-	// 	// Copy the file data from the zip to the local file
-	// 	_, err = io.Copy(outFile, zipFile)
-	// 	if err != nil {
-	// 		fmt.Println("\nFailed to copy file:", err)
-	// 		return
-	// 	}
-	// }
 }
 
 func initGoApp(projectName string) {
-
 	cmd := exec.Command("go", "mod", "init", projectName)
 	cmd.Dir = projectName
 
@@ -146,15 +162,40 @@ func initGoApp(projectName string) {
 	cmd = exec.Command("go", "mod", "tidy")
 	cmd.Dir = projectName
 
-	output, err = cmd.CombinedOutput()
+	_, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Fatalf("Error: %v\nOutput: %s", err, output)
 	}
-
-	fmt.Println(string(output))
 }
 
 func process(i int) {
 	pos := i % 4
 	fmt.Print("Generating code: " + processChars[pos] + "\r")
+}
+
+func copyMigrations(projectName string, responses []appwizard.EnvData) {
+	dbConnectionName := getDbConnection(responses)
+	fmt.Println("Generating " + dbConnectionName + "data")
+	switch dbConnectionName {
+	case "sqlite":
+		extract(projectName, "migrations", &sqliteZipData)
+
+	case "mysql":
+		extract(projectName, "migrations", &mysqlZipData)
+	case "pgsql":
+		extract(projectName, "migrations", &pgsqlZipData)
+	case "firebird":
+		extract(projectName, "migrations", &firebirdZipData)
+	default:
+		fmt.Print("Skip generating, migrations not set")
+	}
+}
+
+func getDbConnection(responses []appwizard.EnvData) string {
+	for _, e := range responses {
+		if e.Key == "DB_CONNECTION" {
+			return e.Value
+		}
+	}
+	return ""
 }

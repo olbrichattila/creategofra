@@ -11,6 +11,6 @@ var databaseQuestions = question{
 		"1": answer{value: "mysql", nextQuestion: &mySqlDbHostQuestion},
 		"2": answer{value: "sqlite", nextQuestion: &sqliteDBDatabaseQuestion},
 		"3": answer{value: "pgsql", nextQuestion: &pgSqlDbHostQuestion},
-		"4": answer{value: "firebird", nextQuestion: nil},
+		"4": answer{value: "firebird", nextQuestion: &firebirdDbHostQuestion},
 	},
 }

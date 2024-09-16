@@ -5,11 +5,14 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/olbrichattila/creategofra/internal/specio"
 )
 
-type envData struct {
-	key   string
-	value string
+// EnvData contains answers given by the user
+type EnvData struct {
+	Key   string
+	Value string
 }
 
 type answer struct {
@@ -26,7 +29,7 @@ type question struct {
 	nextQuestion  *question
 }
 
-func Wizard(envFileName string) {
+func Wizard(envFileName string) []EnvData {
 	envContent := getEnvContent(envFileName)
 
 	responses := processQuestions(envContent, appUrlQuestion)
@@ -43,10 +46,12 @@ func Wizard(envFileName string) {
 
 	envStr := mergeEnv(envContent, responses)
 	saveEnvContent(envFileName, envStr)
+
+	return responses
 }
 
-func processQuestions(envContent string, q question) []envData {
-	responses := make([]envData, 0)
+func processQuestions(envContent string, q question) []EnvData {
+	responses := make([]EnvData, 0)
 	currentQuestion := q
 	for {
 		currentValue := lookupValue(envContent, currentQuestion.key)
@@ -60,7 +65,7 @@ func processQuestions(envContent string, q question) []envData {
 		}
 
 		if currentQuestion.key != "" && answer.value != "" {
-			responses = append(responses, envData{key: currentQuestion.key, value: answer.value})
+			responses = append(responses, EnvData{Key: currentQuestion.key, Value: answer.value})
 		}
 
 		if answer.nextQuestion != nil {
@@ -86,10 +91,10 @@ func selection(q question, currentValue string) *answer {
 	for {
 		response := ""
 		if len(q.answers) == 0 {
-			response = input(prompt, currentValue)
+			response = specio.Input(prompt, currentValue)
 		} else {
 			resolvedAnswer := resolveAnswer(q.answers, currentValue)
-			response = input(prompt, resolvedAnswer)
+			response = specio.Input(prompt, resolvedAnswer)
 		}
 
 		if response == "" && q.mandatory {
@@ -117,12 +122,12 @@ func selection(q question, currentValue string) *answer {
 	}
 }
 
-func mergeEnv(currentEnv string, data []envData) string {
+func mergeEnv(currentEnv string, data []EnvData) string {
 	currentLines := strings.Split(currentEnv, "\n")
 
 	for _, envLine := range data {
-		envRow := envLine.key + "=" + envLine.value
-		if keyId, ok := lookup(currentLines, envLine.key); ok {
+		envRow := envLine.Key + "=" + envLine.Value
+		if keyId, ok := lookup(currentLines, envLine.Key); ok {
 			currentLines[keyId] = envRow
 			continue
 		}
@@ -183,13 +188,13 @@ func resolveAnswer(a answers, value string) string {
 	return ""
 }
 
-func getStorages(data []envData) []string {
+func getStorages(data []EnvData) []string {
 	re := regexp.MustCompile(`.*_STORAGE`)
 
 	storages := make([]string, 0)
 	for _, env := range data {
-		if re.MatchString(env.key) && !sliceContains(storages, env.value) {
-			storages = append(storages, env.value)
+		if re.MatchString(env.Key) && !sliceContains(storages, env.Value) {
+			storages = append(storages, env.Value)
 		}
 	}
 
