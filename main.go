@@ -11,12 +11,17 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/olbrichattila/creategofra/internal/appwizard"
+	"github.com/olbrichattila/creategofra/internal/specio"
 )
 
 //go:embed files/blank.zip
-var zipData []byte
+var blankAppZipData []byte
+
+//go:embed files/regapp.zip
+var regAppZipData []byte
 
 // Migration data
 
@@ -34,6 +39,15 @@ var pgsqlZipData []byte
 
 var processChars = []string{"\\", "|", "/", "-"}
 
+var skipMigration = []string{
+	"2024-07-31_21_01_53-migrate--user.sql",
+	"2024-07-31_21_01_53-rollback--user.sql",
+	"2024-08-15_20_58_24-migrate--reg_confirmations.sql",
+	"2024-08-15_20_58_24-rollback--reg_confirmations.sql",
+	"2024-08-26_15_35_47-migrate--password-reminder.sql",
+	"2024-08-26_15_35_47-rollback--password-reminder.sql",
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage creategofra <project-name>")
@@ -46,13 +60,37 @@ func main() {
 		return
 	}
 
-	extract(projectName, "", &zipData)
+	selection := extractRequestedVersion(projectName)
+
 	initGoApp(projectName)
 	responses := appwizard.Wizard(projectName + "/.env")
 
-	copyMigrations(projectName, responses)
+	copyMigrations(projectName, selection, responses)
 
 	fmt.Print("\nDone\n")
+}
+
+func extractRequestedVersion(projectName string) string {
+	fmt.Println(`Select project type
+  1. Blank project
+  2. Project with login/registration`)
+
+	for {
+		selection := specio.Input("Please select (1 or 2): ", "")
+		if selection == "1" {
+			fmt.Println()
+			extract(projectName, "project source code", "", []string{}, &blankAppZipData)
+			return selection
+		}
+
+		if selection == "2" {
+			fmt.Println()
+			extract(projectName, "project source code", "", []string{}, &regAppZipData)
+			return selection
+		}
+
+		fmt.Println("\nInvalid selection")
+	}
 }
 
 func validate(projectName string) string {
@@ -64,7 +102,7 @@ func validate(projectName string) string {
 	return fmt.Sprintf("Project '%s' already exists!", projectName)
 }
 
-func extract(projectName, subFolder string, data *[]byte) {
+func extract(projectName, taskName, subFolder string, skipData []string, data *[]byte) {
 	projectName = projectName + "/"
 	if subFolder != "" {
 		projectName = projectName + "/" + subFolder + "/"
@@ -81,7 +119,11 @@ func extract(projectName, subFolder string, data *[]byte) {
 	// Iterate through the files in the zip archive
 	for _, file := range zipReader.File {
 		i++
-		process(i)
+		process(i, taskName)
+		if contains(file.Name, skipData) {
+			continue
+		}
+
 		targetFileName := projectName + file.Name
 
 		if file.FileInfo().IsDir() {
@@ -168,24 +210,29 @@ func initGoApp(projectName string) {
 	}
 }
 
-func process(i int) {
+func process(i int, taskName string) {
 	pos := i % 4
-	fmt.Print("Generating code: " + processChars[pos] + "\r")
+	fmt.Printf("Generating %s: %s\r", taskName, processChars[pos])
+	// extraction is fast, so the user can see it does something
+	time.Sleep(30 * time.Millisecond)
 }
 
-func copyMigrations(projectName string, responses []appwizard.EnvData) {
+func copyMigrations(projectName, selection string, responses []appwizard.EnvData) {
 	dbConnectionName := getDbConnection(responses)
-	fmt.Println("Generating " + dbConnectionName + "data")
+	skipData := []string{}
+	if selection == "1" {
+		skipData = skipMigration
+	}
+
 	switch dbConnectionName {
 	case "sqlite":
-		extract(projectName, "migrations", &sqliteZipData)
-
+		extract(projectName, "sqlite migrations", "migrations", skipData, &sqliteZipData)
 	case "mysql":
-		extract(projectName, "migrations", &mysqlZipData)
+		extract(projectName, "MySql migrations", "migrations", skipData, &mysqlZipData)
 	case "pgsql":
-		extract(projectName, "migrations", &pgsqlZipData)
+		extract(projectName, "PostgresQl migrations", "migrations", skipData, &pgsqlZipData)
 	case "firebird":
-		extract(projectName, "migrations", &firebirdZipData)
+		extract(projectName, "Firebird migrations", "migrations", skipData, &firebirdZipData)
 	default:
 		fmt.Print("Skip generating, migrations not set")
 	}
@@ -198,4 +245,13 @@ func getDbConnection(responses []appwizard.EnvData) string {
 		}
 	}
 	return ""
+}
+
+func contains(item string, data []string) bool {
+	for _, v := range data {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }
