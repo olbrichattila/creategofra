@@ -15,21 +15,24 @@ var pgSqlDbPortQuestion = question{
 }
 
 var pgSqlDbDatabaseNameQuestion = question{
-	key:          "DB_DATABASE",
-	prompt:       "Pease provide database name",
-	nextQuestion: &pgSqlDbUserNameQuestion,
+	key:           "DB_DATABASE",
+	prompt:        "Pease provide database name",
+	defaultAnswer: "postgres",
+	nextQuestion:  &pgSqlDbUserNameQuestion,
 }
 
 var pgSqlDbUserNameQuestion = question{
-	key:          "DB_USERNAME",
-	prompt:       "Pease provide database user name",
-	nextQuestion: &pgSqlDbPasswordQuestion,
+	key:           "DB_USERNAME",
+	prompt:        "Pease provide database user name",
+	defaultAnswer: "postgres",
+	nextQuestion:  &pgSqlDbPasswordQuestion,
 }
 
 var pgSqlDbPasswordQuestion = question{
-	key:          "DB_PASSWORD",
-	prompt:       "Pease provide database password",
-	nextQuestion: &pgSqlDbSSLModeQuestion,
+	key:           "DB_PASSWORD",
+	prompt:        "Pease provide database password",
+	defaultAnswer: "postgres",
+	nextQuestion:  &pgSqlDbSSLModeQuestion,
 }
 
 var pgSqlDbSSLModeQuestion = question{

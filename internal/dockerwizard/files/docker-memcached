@@ -1,0 +1,9 @@
+  memcached:
+    image: memcached:latest
+    container_name: memcached
+    ports:
+      - "MEMCACHE_PORT:11211"
+    environment:
+      MEMCACHED_MEMORY: 64
+      MEMCACHED_MAX_CONNECTIONS: 1024
+

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/olbrichattila/creategofra/internal/appwizard"
+	"github.com/olbrichattila/creategofra/internal/dockerwizard"
 	"github.com/olbrichattila/creategofra/internal/specio"
 )
 
@@ -63,9 +64,20 @@ func main() {
 	selection := extractRequestedVersion(projectName)
 
 	initGoApp(projectName)
-	responses := appwizard.Wizard(projectName + "/.env")
+	responses, storages := appwizard.Wizard(projectName + "/.env")
 
 	copyMigrations(projectName, selection, responses)
+
+	hasMailConfig := hasMailConfig(responses)
+	dbConnectionName := getDbConnection(responses)
+
+	dockerComposeFileContent := dockerwizard.Wizard(dbConnectionName, responses, storages, hasMailConfig)
+
+	err := os.WriteFile(projectName+"/docker-compose.yml", []byte(dockerComposeFileContent), 0644)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
 
 	fmt.Print("\nDone\n")
 }
@@ -103,7 +115,7 @@ func validate(projectName string) string {
 }
 
 func extract(projectName, taskName, subFolder string, skipData []string, data *[]byte) {
-	projectName = projectName + "/"
+	projectName += "/"
 	if subFolder != "" {
 		projectName = projectName + "/" + subFolder + "/"
 	}
@@ -245,6 +257,15 @@ func getDbConnection(responses []appwizard.EnvData) string {
 		}
 	}
 	return ""
+}
+
+func hasMailConfig(responses []appwizard.EnvData) bool {
+	for _, e := range responses {
+		if e.Key == "SMTP_USER_NAME" {
+			return true
+		}
+	}
+	return false
 }
 
 func contains(item string, data []string) bool {

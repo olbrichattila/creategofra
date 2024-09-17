@@ -29,13 +29,13 @@ func Input(prompt, defaultTxt string) string {
 		displayText(prompt, result, curPos, maxLen)
 		char, key, err := keyboard.GetKey()
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err.Error())
+			break
 		}
 
 		if key == 3 {
 			fmt.Print(showCursor)
-			panic("Application manually terminated")
-			//	os.Exit(0) // This brakes the console
+			break
 		}
 
 		if key == 0 {
@@ -99,10 +99,10 @@ func displayText(prompt, s string, p, m int) {
 	}
 	for i, c := range s {
 		if i == p {
-			result = result + cursorBegin + string(c) + cursorEnd
+			result += cursorBegin + string(c) + cursorEnd
 			continue
 		}
-		result = result + string(c)
+		result += string(c)
 	}
 
 	fmt.Print(result)
@@ -116,9 +116,9 @@ func recordKeyPress(s string, p int, c rune) string {
 	result := ""
 	for i, l := range s {
 		if i == p {
-			result = result + string(c)
+			result += string(c)
 		}
-		result = result + string(l)
+		result += string(l)
 	}
 
 	return result
@@ -128,7 +128,7 @@ func removeCharAtCursor(s string, p int) string {
 	result := ""
 	for i, l := range s {
 		if i != p-1 {
-			result = result + string(l)
+			result += string(l)
 		}
 	}
 
@@ -139,7 +139,7 @@ func removeCharAfterCursor(s string, p int) string {
 	result := ""
 	for i, l := range s {
 		if i != p {
-			result = result + string(l)
+			result += string(l)
 		}
 	}
 

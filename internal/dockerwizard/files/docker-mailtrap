@@ -1,0 +1,10 @@
+  mailtrap:
+    image: maildev/maildev:latest
+    container_name: mailtrap
+    ports:
+      - "1080:1080"   # Web interface (Mailtrap UI)
+      - "SMTP_PORT:1025"   # SMTP port
+    environment:
+      - MAILDEV_INCOMING_USER=SMTP_USER_NAME
+      - MAILDEV_INCOMING_PASS=SMTP_PASSWORD
+

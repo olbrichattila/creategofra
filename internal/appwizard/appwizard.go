@@ -29,7 +29,7 @@ type question struct {
 	nextQuestion  *question
 }
 
-func Wizard(envFileName string) []EnvData {
+func Wizard(envFileName string) ([]EnvData, []string) {
 	envContent := getEnvContent(envFileName)
 
 	responses := processQuestions(envContent, appUrlQuestion)
@@ -47,7 +47,7 @@ func Wizard(envFileName string) []EnvData {
 	envStr := mergeEnv(envContent, responses)
 	saveEnvContent(envFileName, envStr)
 
-	return responses
+	return responses, storages
 }
 
 func processQuestions(envContent string, q question) []EnvData {
