@@ -3,7 +3,6 @@ package main
 import (
 	"archive/zip"
 	"bytes"
-	_ "embed"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	_ "embed"
 
 	"github.com/olbrichattila/creategofra/internal/appwizard"
 	"github.com/olbrichattila/creategofra/internal/dockerwizard"
